@@ -1,0 +1,1276 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <title>Создать заказ</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    :root {
+      --bg: var(--tg-theme-bg-color, Canvas);
+      --text: var(--tg-theme-text-color, CanvasText);
+      --hint: var(--tg-theme-hint-color, GrayText);
+      --surface: var(--tg-theme-section-bg-color, var(--tg-theme-secondary-bg-color, Canvas));
+      --surface-2: var(--tg-theme-secondary-bg-color, Canvas);
+      --button: var(--tg-theme-button-color, ButtonFace);
+      --button-text: var(--tg-theme-button-text-color, ButtonText);
+      --accent: var(--tg-theme-accent-text-color, var(--tg-theme-link-color, LinkText));
+      --danger: var(--tg-theme-destructive-text-color, var(--text));
+      --separator: var(--tg-theme-section-separator-color, color-mix(in srgb, CanvasText 14%, transparent));
+      --soft-shadow: color-mix(in srgb, CanvasText 8%, transparent);
+      --radius: 18px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      min-height: 100%;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+      overscroll-behavior-y: none;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(circle at 12% -8%, color-mix(in srgb, var(--accent) 14%, transparent), transparent 38%),
+        radial-gradient(circle at 92% 4%, color-mix(in srgb, var(--button) 10%, transparent), transparent 34%);
+    }
+
+    button,
+    input,
+    textarea {
+      font: inherit;
+    }
+
+    button {
+      color: inherit;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    button:focus-visible,
+    input:focus-visible,
+    textarea:focus-visible {
+      outline: 3px solid color-mix(in srgb, var(--button) 55%, transparent);
+      outline-offset: 2px;
+    }
+
+    [hidden] {
+      display: none !important;
+    }
+
+    .app {
+      position: relative;
+      width: 100%;
+      max-width: 720px;
+      margin: 0 auto;
+      padding:
+        calc(env(safe-area-inset-top) + 18px)
+        16px
+        calc(env(safe-area-inset-bottom) + 112px);
+    }
+
+    .eyebrow {
+      margin: 0 0 8px;
+      color: var(--hint);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(26px, 7vw, 36px);
+      line-height: 1.12;
+      letter-spacing: -0.03em;
+    }
+
+    .subtitle {
+      margin: 10px 0 0;
+      max-width: 36em;
+      color: var(--hint);
+      font-size: 15px;
+      line-height: 1.45;
+    }
+
+    .progress {
+      height: 5px;
+      margin: 18px 0 22px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: var(--separator);
+    }
+
+    .progress-bar {
+      display: block;
+      width: 25%;
+      height: 100%;
+      border-radius: inherit;
+      background: var(--button);
+      transition: width 240ms ease;
+    }
+
+    .notice {
+      margin: 0 0 16px;
+      padding: 13px 15px;
+      border: 1px solid var(--danger);
+      border-radius: 14px;
+      background: var(--surface);
+      color: var(--danger);
+      font-size: 14px;
+      line-height: 1.4;
+    }
+
+    .screen {
+      display: none;
+    }
+
+    .screen.is-active {
+      display: block;
+      animation: screen-in 220ms ease both;
+    }
+
+    @keyframes screen-in {
+      from {
+        opacity: 0;
+        transform: translateY(8px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .service-grid {
+      display: grid;
+      gap: 12px;
+    }
+
+    .service-card {
+      display: grid;
+      grid-template-columns: 54px minmax(0, 1fr) auto;
+      gap: 14px;
+      align-items: center;
+      width: 100%;
+      min-height: 92px;
+      padding: 16px;
+      border: 1px solid var(--separator);
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: 0 8px 22px var(--soft-shadow);
+      text-align: left;
+      cursor: pointer;
+      transition:
+        transform 160ms ease,
+        border-color 160ms ease,
+        background-color 160ms ease,
+        box-shadow 160ms ease;
+    }
+
+    .service-card:active {
+      transform: scale(0.985);
+    }
+
+    .service-card.is-selected {
+      border-color: var(--button);
+      background: color-mix(in srgb, var(--button) 11%, var(--surface));
+      box-shadow:
+        0 0 0 2px color-mix(in srgb, var(--button) 32%, transparent),
+        0 10px 26px var(--soft-shadow);
+    }
+
+    .service-icon {
+      display: grid;
+      width: 54px;
+      height: 54px;
+      place-items: center;
+      border-radius: 17px;
+      background: var(--surface-2);
+      font-size: 28px;
+      line-height: 1;
+    }
+
+    .service-title {
+      display: block;
+      margin: 0 0 4px;
+      font-size: 19px;
+      font-weight: 750;
+      line-height: 1.2;
+    }
+
+    .service-description {
+      display: block;
+      color: var(--hint);
+      font-size: 14px;
+      line-height: 1.35;
+    }
+
+    .service-check {
+      display: grid;
+      width: 28px;
+      height: 28px;
+      place-items: center;
+      border: 1px solid var(--separator);
+      border-radius: 999px;
+      color: transparent;
+      font-size: 15px;
+      font-weight: 800;
+      transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease;
+    }
+
+    .service-card.is-selected .service-check {
+      border-color: var(--button);
+      background: var(--button);
+      color: var(--button-text);
+    }
+
+    .field {
+      margin: 0 0 14px;
+      padding: 16px;
+      border: 1px solid var(--separator);
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: 0 8px 22px var(--soft-shadow);
+    }
+
+    .field-label {
+      display: block;
+      margin: 0 0 6px;
+      font-size: 16px;
+      font-weight: 700;
+      line-height: 1.35;
+    }
+
+    .field-hint {
+      margin: 0 0 10px;
+      color: var(--hint);
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .required {
+      color: var(--hint);
+      font-weight: 500;
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 0 0 10px;
+    }
+
+    .chip {
+      min-height: 42px;
+      padding: 9px 14px;
+      border: 1px solid var(--separator);
+      border-radius: 999px;
+      background: var(--surface-2);
+      color: var(--text);
+      font-size: 14px;
+      line-height: 1.2;
+      cursor: pointer;
+      transition:
+        transform 140ms ease,
+        border-color 140ms ease,
+        background-color 140ms ease,
+        color 140ms ease;
+    }
+
+    .chip:active {
+      transform: scale(0.97);
+    }
+
+    .chip[aria-pressed="true"] {
+      border-color: var(--button);
+      background: var(--button);
+      color: var(--button-text);
+    }
+
+    .text-input,
+    .text-area {
+      display: block;
+      width: 100%;
+      border: 1px solid var(--separator);
+      border-radius: 14px;
+      background: var(--bg);
+      color: var(--text);
+      padding: 13px 14px;
+      font-size: 16px;
+      line-height: 1.45;
+      transition: border-color 150ms ease, box-shadow 150ms ease;
+    }
+
+    .text-input {
+      min-height: 50px;
+    }
+
+    .text-area {
+      min-height: 118px;
+      resize: vertical;
+    }
+
+    .text-input::placeholder,
+    .text-area::placeholder {
+      color: var(--hint);
+      opacity: 0.85;
+    }
+
+    .text-input:focus,
+    .text-area:focus {
+      border-color: var(--button);
+      outline: none;
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--button) 20%, transparent);
+    }
+
+    .field-meta {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 7px;
+      color: var(--hint);
+      font-size: 12px;
+      line-height: 1.2;
+    }
+
+    .section-title {
+      margin: 0 0 14px;
+      font-size: 20px;
+      line-height: 1.25;
+    }
+
+    .review-service {
+      display: flex;
+      gap: 14px;
+      align-items: center;
+      margin-bottom: 14px;
+      padding: 16px;
+      border: 1px solid var(--separator);
+      border-radius: var(--radius);
+      background: var(--surface);
+    }
+
+    .review-service .service-icon {
+      flex: 0 0 54px;
+    }
+
+    .review-list {
+      overflow: hidden;
+      border: 1px solid var(--separator);
+      border-radius: var(--radius);
+      background: var(--surface);
+    }
+
+    .review-item {
+      padding: 15px 16px;
+      border-bottom: 1px solid var(--separator);
+    }
+
+    .review-item:last-child {
+      border-bottom: 0;
+    }
+
+    .review-label {
+      display: block;
+      margin: 0 0 5px;
+      color: var(--hint);
+      font-size: 13px;
+      line-height: 1.3;
+    }
+
+    .review-value {
+      display: block;
+      margin: 0;
+      font-size: 16px;
+      line-height: 1.45;
+      overflow-wrap: anywhere;
+      white-space: pre-wrap;
+    }
+
+    .size-note {
+      margin: 14px 2px 0;
+      color: var(--hint);
+      font-size: 12px;
+      line-height: 1.4;
+      text-align: right;
+    }
+
+    .footer-hint {
+      margin: 18px 2px 0;
+      color: var(--hint);
+      font-size: 13px;
+      line-height: 1.45;
+      text-align: center;
+    }
+
+    .browser-controls {
+      display: flex;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .browser-controls button {
+      flex: 1;
+      min-height: 52px;
+      border: 1px solid var(--separator);
+      border-radius: 14px;
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+    }
+
+    .browser-controls button:last-child {
+      border-color: var(--button);
+      background: var(--button);
+      color: var(--button-text);
+      font-weight: 700;
+    }
+
+    @media (min-width: 620px) {
+      .service-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .service-card {
+        min-height: 132px;
+        grid-template-columns: 54px minmax(0, 1fr);
+        align-content: start;
+      }
+
+      .service-card .service-check {
+        display: none;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        scroll-behavior: auto !important;
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.001ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <p class="eyebrow">Новый заказ</p>
+      <h1 id="screenTitle">Создать заказ</h1>
+      <p class="subtitle" id="screenSubtitle">Выберите услугу — дальше задам несколько вопросов.</p>
+      <div class="progress" aria-hidden="true">
+        <span class="progress-bar" id="progressBar"></span>
+      </div>
+    </header>
+
+    <div class="notice" id="notice" role="alert" hidden></div>
+
+    <main>
+      <section class="screen is-active" data-step="0" id="serviceScreen">
+        <div class="service-grid" id="serviceGrid"></div>
+      </section>
+
+      <section class="screen" data-step="1" id="questionsScreen">
+        <div id="questionsList"></div>
+      </section>
+
+      <section class="screen" data-step="2" id="termsScreen">
+        <div class="field">
+          <label class="field-label" for="deadlineInput">Какой срок? <span class="required">*</span></label>
+          <p class="field-hint">Выберите быстрый вариант или напишите свой.</p>
+          <div class="chips" id="deadlineChips"></div>
+          <input class="text-input" id="deadlineInput" type="text" maxlength="120" placeholder="Например, 1 неделя" autocomplete="off">
+          <div class="field-meta"><span id="deadlineCounter">0 / 120</span></div>
+        </div>
+
+        <div class="field">
+          <label class="field-label" for="budgetInput">Какой бюджет? <span class="required">*</span></label>
+          <p class="field-hint">Можно указать диапазон или «обсудим».</p>
+          <input class="text-input" id="budgetInput" type="text" maxlength="160" placeholder="Например, 5 000 ₽" autocomplete="off">
+          <div class="field-meta"><span id="budgetCounter">0 / 160</span></div>
+        </div>
+      </section>
+
+      <section class="screen" data-step="3" id="reviewScreen">
+        <div class="review-service" id="reviewService"></div>
+        <div class="review-list" id="reviewList"></div>
+        <p class="size-note" id="sizeNote"></p>
+        <p class="footer-hint">Нажмите «Отправить» — данные уйдут в бот, и приложение закроется.</p>
+      </section>
+    </main>
+
+    <div class="browser-controls" id="browserControls" hidden>
+      <button type="button" id="browserBack">Назад</button>
+      <button type="button" id="browserNext">Далее</button>
+    </div>
+
+    <p class="footer-hint" id="telegramHint">Форма работает внутри Telegram.</p>
+  </div>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const MAX_PAYLOAD_BYTES = 3500;
+      const TELEGRAM_MAX_BYTES = 4096;
+      const encoder = new TextEncoder();
+
+      const SERVICES = {
+        bot: {
+          title: "Бот",
+          icon: "🤖",
+          description: "Telegram или Discord-бот под вашу задачу.",
+          questions: [
+            {
+              key: "platform",
+              label: "На какой платформе нужен бот?",
+              hint: "Можно выбрать вариант или написать свой.",
+              placeholder: "Telegram, Discord…",
+              maxLength: 120,
+              options: ["Telegram", "Discord", "Другое"]
+            },
+            {
+              key: "functions",
+              label: "Какие функции должен выполнять бот?",
+              hint: "Опишите сценарии, команды и интеграции.",
+              placeholder: "Например: приём заказов, оплата, админ-панель…",
+              maxLength: 1200,
+              multiline: true
+            },
+            {
+              key: "hosting",
+              label: "Есть ли хостинг или сервер?",
+              hint: "Если не уверены, выберите «Нужна помощь».",
+              placeholder: "Да / нет / нужна помощь",
+              maxLength: 200,
+              options: ["Есть", "Нет", "Нужна помощь"]
+            }
+          ]
+        },
+        design: {
+          title: "Дизайн",
+          icon: "🎨",
+          description: "Баннеры, аватары, эмодзи и оформление.",
+          questions: [
+            {
+              key: "what",
+              label: "Что нужно сделать?",
+              hint: "Выберите вариант или опишите своими словами.",
+              placeholder: "Баннер, аватар, эмодзи…",
+              maxLength: 300,
+              options: ["Баннер", "Аватар", "Эмодзи", "Другое"]
+            },
+            {
+              key: "style",
+              label: "Какой стиль или настроение?",
+              placeholder: "Минимализм, яркий, тёмный, строгий…",
+              maxLength: 500,
+              multiline: true,
+              options: ["Минимализм", "Яркий", "Тёмный", "Не знаю"]
+            },
+            {
+              key: "sizes",
+              label: "Какие нужны размеры или форматы?",
+              placeholder: "Например: 1080×1080 PNG и GIF",
+              maxLength: 500,
+              multiline: true
+            },
+            {
+              key: "references",
+              label: "Есть ли референсы?",
+              hint: "Опишите словами. Сами файлы можно прикрепить после отправки заказа.",
+              placeholder: "Ссылки, примеры или «нет референсов»",
+              maxLength: 800,
+              multiline: true,
+              options: ["Нет референсов"]
+            }
+          ]
+        },
+        plugin: {
+          title: "Плагин",
+          icon: "🧩",
+          description: "Плагин для клиента Telegram или Discord.",
+          questions: [
+            {
+              key: "client",
+              label: "Для какого клиента нужен плагин?",
+              placeholder: "ExteraGram, Telegram, Discord…",
+              maxLength: 200,
+              options: ["ExteraGram", "Telegram", "Discord", "Другое"]
+            },
+            {
+              key: "description",
+              label: "Что должен делать плагин?",
+              hint: "Опишите основную функцию и ожидаемый результат.",
+              placeholder: "Например: добавлять кнопку в меню чата…",
+              maxLength: 1200,
+              multiline: true
+            },
+            {
+              key: "example",
+              label: "Опишите пример поведения",
+              hint: "Как пользователь взаимодействует с плагином?",
+              placeholder: "Последовательность действий и результат",
+              maxLength: 800,
+              multiline: true
+            }
+          ]
+        },
+        other: {
+          title: "Другое",
+          icon: "✏️",
+          description: "Задача, которая не вошла в другие категории.",
+          questions: [
+            {
+              key: "description",
+              label: "Опишите задачу",
+              hint: "Чем подробнее, тем точнее оценка.",
+              placeholder: "Что нужно сделать и какой результат ожидаете",
+              maxLength: 1200,
+              multiline: true
+            }
+          ]
+        }
+      };
+
+      const SERVICE_ORDER = ["bot", "design", "plugin", "other"];
+      const DEADLINE_QUESTION = {
+        key: "deadline",
+        label: "Какой срок?",
+        maxLength: 120
+      };
+      const BUDGET_QUESTION = {
+        key: "budget",
+        label: "Какой бюджет?",
+        maxLength: 160
+      };
+      const DEADLINE_OPTIONS = ["3 дня", "1 неделя", "2 недели", "Обсудим"];
+
+      const state = {
+        step: 0,
+        service: null,
+        answers: {},
+        sending: false,
+        preparedPayload: null
+      };
+
+      const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
+
+      const els = {
+        serviceGrid: document.getElementById("serviceGrid"),
+        questionsList: document.getElementById("questionsList"),
+        deadlineChips: document.getElementById("deadlineChips"),
+        deadlineInput: document.getElementById("deadlineInput"),
+        budgetInput: document.getElementById("budgetInput"),
+        deadlineCounter: document.getElementById("deadlineCounter"),
+        budgetCounter: document.getElementById("budgetCounter"),
+        reviewService: document.getElementById("reviewService"),
+        reviewList: document.getElementById("reviewList"),
+        sizeNote: document.getElementById("sizeNote"),
+        notice: document.getElementById("notice"),
+        title: document.getElementById("screenTitle"),
+        subtitle: document.getElementById("screenSubtitle"),
+        progress: document.getElementById("progressBar"),
+        screens: Array.from(document.querySelectorAll(".screen")),
+        browserControls: document.getElementById("browserControls"),
+        browserBack: document.getElementById("browserBack"),
+        browserNext: document.getElementById("browserNext"),
+        telegramHint: document.getElementById("telegramHint")
+      };
+
+      function hapticImpact(style) {
+        try {
+          if (tg && tg.HapticFeedback) {
+            tg.HapticFeedback.impactOccurred(style || "light");
+          }
+        } catch (_) {
+          // Haptic feedback не критичен для работы формы.
+        }
+      }
+
+      function hapticNotify(type) {
+        try {
+          if (tg && tg.HapticFeedback) {
+            tg.HapticFeedback.notificationOccurred(type || "success");
+          }
+        } catch (_) {
+          // Haptic feedback не критичен для работы формы.
+        }
+      }
+
+      function applyTheme() {
+        if (!tg) {
+          return;
+        }
+        const theme = tg.themeParams || {};
+        const mapping = {
+          bg_color: "--tg-theme-bg-color",
+          secondary_bg_color: "--tg-theme-secondary-bg-color",
+          text_color: "--tg-theme-text-color",
+          hint_color: "--tg-theme-hint-color",
+          link_color: "--tg-theme-link-color",
+          button_color: "--tg-theme-button-color",
+          button_text_color: "--tg-theme-button-text-color",
+          section_bg_color: "--tg-theme-section-bg-color",
+          section_separator_color: "--tg-theme-section-separator-color",
+          accent_text_color: "--tg-theme-accent-text-color",
+          destructive_text_color: "--tg-theme-destructive-text-color",
+          header_bg_color: "--tg-theme-header-bg-color"
+        };
+        Object.keys(mapping).forEach((key) => {
+          if (theme[key]) {
+            document.documentElement.style.setProperty(mapping[key], theme[key]);
+          }
+        });
+        if (tg.colorScheme) {
+          document.documentElement.style.colorScheme = tg.colorScheme;
+        }
+      }
+
+      function clearNotice() {
+        els.notice.hidden = true;
+        els.notice.textContent = "";
+      }
+
+      function showNotice(text) {
+        els.notice.textContent = text;
+        els.notice.hidden = false;
+        hapticNotify("error");
+      }
+
+      function setMainButton(text, active) {
+        if (!tg || !tg.MainButton) {
+          return;
+        }
+        tg.MainButton.setParams({
+          text: text,
+          is_visible: true,
+          is_active: Boolean(active)
+        });
+      }
+
+      function updateMainButton() {
+        if (tg && tg.MainButton) {
+          setMainButton(state.step === 3 ? "Отправить" : "Далее", !state.sending);
+        }
+        if (!tg) {
+          els.browserNext.textContent = state.step === 3 ? "Отправить" : "Далее";
+          els.browserNext.disabled = state.sending;
+          els.browserBack.disabled = state.sending || state.step === 0;
+        }
+      }
+
+      function updateChrome() {
+        const copy = [
+          ["Создать заказ", "Выберите услугу — дальше задам несколько вопросов."],
+          ["Детали заказа", ""],
+          ["Срок и бюджет", "Это поможет оценить задачу и назвать точную стоимость."],
+          ["Проверь заказ", "Проверьте ответы перед отправкой."]
+        ];
+        const service = state.service ? SERVICES[state.service] : null;
+        els.title.textContent = copy[state.step][0];
+        els.subtitle.textContent = state.step === 1 && service ? `${service.title}: ответьте на вопросы.` : copy[state.step][1];
+        els.progress.style.width = `${((state.step + 1) / 4) * 100}%`;
+        els.screens.forEach((screen) => {
+          screen.classList.toggle("is-active", Number(screen.dataset.step) === state.step);
+        });
+        if (tg && tg.BackButton) {
+          if (state.step > 0) {
+            tg.BackButton.show();
+          } else {
+            tg.BackButton.hide();
+          }
+        }
+        updateMainButton();
+      }
+
+      function renderServices() {
+        els.serviceGrid.replaceChildren();
+        SERVICE_ORDER.forEach((id) => {
+          const service = SERVICES[id];
+          const card = document.createElement("button");
+          card.type = "button";
+          card.className = "service-card";
+          card.dataset.service = id;
+          card.setAttribute("aria-pressed", String(state.service === id));
+
+          if (state.service === id) {
+            card.classList.add("is-selected");
+          }
+
+          const icon = document.createElement("span");
+          icon.className = "service-icon";
+          icon.setAttribute("aria-hidden", "true");
+          icon.textContent = service.icon;
+
+          const body = document.createElement("span");
+          const title = document.createElement("span");
+          title.className = "service-title";
+          title.textContent = service.title;
+          const description = document.createElement("span");
+          description.className = "service-description";
+          description.textContent = service.description;
+          body.append(title, description);
+
+          const check = document.createElement("span");
+          check.className = "service-check";
+          check.setAttribute("aria-hidden", "true");
+          check.textContent = "✓";
+
+          card.append(icon, body, check);
+          card.addEventListener("click", () => {
+            const changed = state.service !== id;
+            state.service = id;
+            if (changed) {
+              state.answers = {};
+              state.preparedPayload = null;
+            }
+            clearNotice();
+            hapticImpact("light");
+            renderServices();
+          });
+          els.serviceGrid.append(card);
+        });
+      }
+
+      function questionsForCurrentService() {
+        return state.service ? SERVICES[state.service].questions : [];
+      }
+
+      function createChips(options, input, key) {
+        const wrap = document.createElement("div");
+        wrap.className = "chips";
+        options.forEach((option) => {
+          const chip = document.createElement("button");
+          chip.type = "button";
+          chip.className = "chip";
+          chip.textContent = option;
+          chip.setAttribute("aria-pressed", "false");
+          chip.addEventListener("click", () => {
+            input.value = option;
+            state.answers[key] = option;
+            state.preparedPayload = null;
+            syncChips(wrap, input.value);
+            clearNotice();
+            hapticImpact("light");
+            input.focus();
+          });
+          wrap.append(chip);
+        });
+        syncChips(wrap, input.value);
+        return wrap;
+      }
+
+      function syncChips(wrap, value) {
+        Array.from(wrap.children).forEach((chip) => {
+          chip.setAttribute("aria-pressed", String(chip.textContent === value));
+        });
+      }
+
+      function renderQuestions() {
+        els.questionsList.replaceChildren();
+        const questions = questionsForCurrentService();
+        if (!questions.length) {
+          return;
+        }
+
+        questions.forEach((question) => {
+          const field = document.createElement("div");
+          field.className = "field";
+
+          const label = document.createElement("label");
+          label.className = "field-label";
+          label.htmlFor = `field-${question.key}`;
+          label.textContent = question.label;
+          const required = document.createElement("span");
+          required.className = "required";
+          required.textContent = " *";
+          label.append(required);
+          field.append(label);
+
+          if (question.hint) {
+            const hint = document.createElement("p");
+            hint.className = "field-hint";
+            hint.textContent = question.hint;
+            field.append(hint);
+          }
+
+          const input = document.createElement(question.multiline ? "textarea" : "input");
+          input.id = `field-${question.key}`;
+          input.className = question.multiline ? "text-area" : "text-input";
+          input.maxLength = question.maxLength;
+          input.placeholder = question.placeholder || "";
+          input.value = state.answers[question.key] || "";
+          if (!question.multiline) {
+            input.type = "text";
+            input.autocomplete = "off";
+          }
+
+          if (question.options && question.options.length) {
+            field.append(createChips(question.options, input, question.key));
+          }
+
+          const meta = document.createElement("div");
+          meta.className = "field-meta";
+          const counter = document.createElement("span");
+          const updateCounter = () => {
+            counter.textContent = `${input.value.length} / ${question.maxLength}`;
+          };
+          updateCounter();
+          meta.append(counter);
+
+          input.addEventListener("input", () => {
+            state.answers[question.key] = input.value;
+            state.preparedPayload = null;
+            updateCounter();
+            clearNotice();
+            if (question.options && question.options.length) {
+              syncChips(field.querySelector(".chips"), input.value);
+            }
+          });
+
+          field.append(input, meta);
+          els.questionsList.append(field);
+        });
+      }
+
+      function createDeadlineChips() {
+        els.deadlineChips.replaceChildren();
+        DEADLINE_OPTIONS.forEach((option) => {
+          const chip = document.createElement("button");
+          chip.type = "button";
+          chip.className = "chip";
+          chip.textContent = option;
+          chip.setAttribute("aria-pressed", "false");
+          chip.addEventListener("click", () => {
+            els.deadlineInput.value = option;
+            state.answers.deadline = option;
+            state.preparedPayload = null;
+            syncChips(els.deadlineChips, option);
+            updateTermCounters();
+            clearNotice();
+            hapticImpact("light");
+          });
+          els.deadlineChips.append(chip);
+        });
+      }
+
+      function updateTermCounters() {
+        els.deadlineCounter.textContent = `${els.deadlineInput.value.length} / 120`;
+        els.budgetCounter.textContent = `${els.budgetInput.value.length} / 160`;
+      }
+
+      function renderTerms() {
+        els.deadlineInput.value = state.answers.deadline || "";
+        els.budgetInput.value = state.answers.budget || "";
+        syncChips(els.deadlineChips, els.deadlineInput.value);
+        updateTermCounters();
+      }
+
+      function trimmedAnswers() {
+        const result = {};
+        const questions = questionsForCurrentService().concat([DEADLINE_QUESTION, BUDGET_QUESTION]);
+        for (const question of questions) {
+          const value = String(state.answers[question.key] || "").trim();
+          if (!value) {
+            return { error: `Заполните поле «${question.label}».` };
+          }
+          if (value.length > question.maxLength) {
+            return { error: `Слишком длинный ответ в поле «${question.label}».` };
+          }
+          result[question.key] = value;
+        }
+        return { answers: result };
+      }
+
+      function byteLength(value) {
+        return encoder.encode(JSON.stringify(value)).length;
+      }
+
+      function shrinkPayload(payload) {
+        let guard = 0;
+        while (byteLength(payload) > MAX_PAYLOAD_BYTES && guard < 1000) {
+          let longestKey = null;
+          let longestLength = 0;
+          Object.keys(payload.answers).forEach((key) => {
+            const length = payload.answers[key].length;
+            if (length > longestLength) {
+              longestLength = length;
+              longestKey = key;
+            }
+          });
+          if (!longestKey || longestLength <= 1) {
+            break;
+          }
+          const excess = byteLength(payload) - MAX_PAYLOAD_BYTES;
+          const cut = Math.max(1, Math.min(80, excess + 24, longestLength - 1));
+          payload.answers[longestKey] = payload.answers[longestKey].slice(0, longestLength - cut).trimEnd();
+          guard += 1;
+        }
+        return byteLength(payload) <= MAX_PAYLOAD_BYTES;
+      }
+
+      function buildPayload() {
+        if (!state.service) {
+          return { error: "Выберите услугу." };
+        }
+        const prepared = trimmedAnswers();
+        if (prepared.error) {
+          return prepared;
+        }
+        const payload = {
+          v: 1,
+          service: state.service,
+          answers: prepared.answers
+        };
+        if (!shrinkPayload(payload)) {
+          return { error: "Не удалось уложить ответы в лимит данных. Сократите текст." };
+        }
+        state.answers = Object.assign({}, state.answers, payload.answers);
+        return { payload };
+      }
+
+      function addReviewItem(labelText, valueText) {
+        const item = document.createElement("div");
+        item.className = "review-item";
+        const label = document.createElement("span");
+        label.className = "review-label";
+        label.textContent = labelText;
+        const value = document.createElement("p");
+        value.className = "review-value";
+        value.textContent = valueText;
+        item.append(label, value);
+        els.reviewList.append(item);
+      }
+
+      function renderReview() {
+        const built = buildPayload();
+        if (built.error) {
+          showNotice(built.error);
+          state.step = 2;
+          updateChrome();
+          renderTerms();
+          return;
+        }
+        state.preparedPayload = built.payload;
+        const service = SERVICES[state.service];
+
+        els.reviewService.replaceChildren();
+        const icon = document.createElement("span");
+        icon.className = "service-icon";
+        icon.setAttribute("aria-hidden", "true");
+        icon.textContent = service.icon;
+        const body = document.createElement("span");
+        const title = document.createElement("span");
+        title.className = "service-title";
+        title.textContent = service.title;
+        const description = document.createElement("span");
+        description.className = "service-description";
+        description.textContent = "Услуга и ответы на вопросы";
+        body.append(title, description);
+        els.reviewService.append(icon, body);
+
+        els.reviewList.replaceChildren();
+        questionsForCurrentService().forEach((question) => {
+          addReviewItem(question.label, state.answers[question.key] || "");
+        });
+        addReviewItem(DEADLINE_QUESTION.label, state.answers.deadline || "");
+        addReviewItem(BUDGET_QUESTION.label, state.answers.budget || "");
+
+        const bytes = byteLength(built.payload);
+        els.sizeNote.textContent = `Данные формы: ${bytes} / ${MAX_PAYLOAD_BYTES} байт`;
+      }
+
+      function renderStep() {
+        clearNotice();
+        if (state.step === 1) {
+          renderQuestions();
+        } else if (state.step === 2) {
+          renderTerms();
+        } else if (state.step === 3) {
+          renderReview();
+        }
+        updateChrome();
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+
+      function validateServiceStep() {
+        if (!state.service) {
+          showNotice("Выберите услугу.");
+          return false;
+        }
+        return true;
+      }
+
+      function validateQuestionsStep() {
+        const questions = questionsForCurrentService();
+        for (const question of questions) {
+          const value = String(state.answers[question.key] || "").trim();
+          if (!value) {
+            showNotice(`Заполните поле «${question.label}».`);
+            return false;
+          }
+        }
+        return true;
+      }
+
+      function validateTermsStep() {
+        if (!String(state.answers.deadline || "").trim()) {
+          showNotice("Укажите срок.");
+          return false;
+        }
+        if (!String(state.answers.budget || "").trim()) {
+          showNotice("Укажите бюджет.");
+          return false;
+        }
+        return true;
+      }
+
+      function goNext() {
+        if (state.sending) {
+          return;
+        }
+        clearNotice();
+        if (state.step === 0 && !validateServiceStep()) {
+          return;
+        }
+        if (state.step === 1 && !validateQuestionsStep()) {
+          return;
+        }
+        if (state.step === 2 && !validateTermsStep()) {
+          return;
+        }
+        if (state.step === 3) {
+          submitOrder();
+          return;
+        }
+        state.step += 1;
+        state.preparedPayload = null;
+        hapticImpact("light");
+        renderStep();
+      }
+
+      function goBack() {
+        if (state.sending || state.step === 0) {
+          return;
+        }
+        clearNotice();
+        hapticImpact("light");
+        state.step -= 1;
+        renderStep();
+      }
+
+      function submitOrder() {
+        const built = buildPayload();
+        if (built.error) {
+          showNotice(built.error);
+          return;
+        }
+        const serialized = JSON.stringify(built.payload);
+        const bytes = encoder.encode(serialized).length;
+        if (bytes > TELEGRAM_MAX_BYTES) {
+          showNotice("Данные формы слишком большие. Сократите ответы.");
+          return;
+        }
+        if (!tg || !tg.sendData) {
+          showNotice("Откройте форму через Telegram — отправка доступна только там.");
+          return;
+        }
+
+        state.sending = true;
+        state.preparedPayload = built.payload;
+        updateMainButton();
+        clearNotice();
+        try {
+          if (tg.MainButton) {
+            tg.MainButton.showProgress(true);
+          }
+          hapticNotify("success");
+          tg.sendData(serialized);
+        } catch (_) {
+          state.sending = false;
+          if (tg.MainButton) {
+            tg.MainButton.showProgress(false);
+          }
+          updateMainButton();
+          showNotice("Не удалось отправить заказ. Попробуйте ещё раз.");
+        }
+      }
+
+      function initTelegram() {
+        if (!tg) {
+          document.body.classList.add("no-telegram");
+          els.browserControls.hidden = false;
+          els.telegramHint.textContent = "Это предпросмотр. Отправка заказа работает только внутри Telegram.";
+          return;
+        }
+
+        try {
+          tg.ready();
+          tg.expand();
+          if (typeof tg.disableVerticalSwipes === "function") {
+            tg.disableVerticalSwipes();
+          }
+        } catch (_) {
+          // Старые клиенты Telegram могут не поддерживать часть методов.
+        }
+
+        applyTheme();
+        els.telegramHint.textContent = "Данные отправятся в этот чат с ботом.";
+
+        if (tg.BackButton) {
+          tg.BackButton.onClick(goBack);
+          tg.BackButton.hide();
+        }
+        if (tg.MainButton) {
+          tg.MainButton.onClick(goNext);
+          tg.MainButton.show();
+        }
+        if (tg.onEvent) {
+          tg.onEvent("themeChanged", applyTheme);
+        }
+        updateChrome();
+      }
+
+      els.deadlineInput.addEventListener("input", () => {
+        state.answers.deadline = els.deadlineInput.value;
+        state.preparedPayload = null;
+        syncChips(els.deadlineChips, els.deadlineInput.value);
+        updateTermCounters();
+        clearNotice();
+      });
+
+      els.budgetInput.addEventListener("input", () => {
+        state.answers.budget = els.budgetInput.value;
+        state.preparedPayload = null;
+        updateTermCounters();
+        clearNotice();
+      });
+
+      els.browserBack.addEventListener("click", goBack);
+      els.browserNext.addEventListener("click", goNext);
+
+      renderServices();
+      createDeadlineChips();
+      initTelegram();
+      renderStep();
+    })();
+  </script>
+</body>
+</html>
