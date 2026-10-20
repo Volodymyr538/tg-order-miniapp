@@ -529,6 +529,9 @@
 
       const MAX_PAYLOAD_BYTES = 3500;
       const TELEGRAM_MAX_BYTES = 4096;
+      const BOT_USERNAME = "mysefl_seif_bot";
+      const ORDER_TEXT_MARKER = "ORDER_WEBAPP_V1\n";
+      const ORDER_TEXT_HEADER = "📝 Заказ из формы — нажмите «Отправить».\n\n";
       const encoder = new TextEncoder();
 
       const SERVICES = {
@@ -1176,6 +1179,35 @@
         renderStep();
       }
 
+      function isInlineLaunch() {
+        return Boolean(
+          tg &&
+          tg.initDataUnsafe &&
+          tg.initDataUnsafe.query_id
+        );
+      }
+
+      function openOrderInChat(serialized) {
+        const text = ORDER_TEXT_HEADER + ORDER_TEXT_MARKER + serialized;
+        if (text.length > TELEGRAM_MAX_BYTES) {
+          throw new Error("Данные формы слишком большие. Сократите ответы.");
+        }
+        const url = `https://t.me/${BOT_USERNAME}?text=${encodeURIComponent(text)}`;
+        if (typeof tg.openTelegramLink === "function") {
+          tg.openTelegramLink(url);
+        } else {
+          window.location.href = url;
+        }
+      }
+
+      function resetSending() {
+        state.sending = false;
+        if (tg && tg.MainButton) {
+          tg.MainButton.showProgress(false);
+        }
+        updateMainButton();
+      }
+
       function submitOrder() {
         const built = buildPayload();
         if (built.error) {
@@ -1188,7 +1220,7 @@
           showNotice("Данные формы слишком большие. Сократите ответы.");
           return;
         }
-        if (!tg || !tg.sendData) {
+        if (!tg) {
           showNotice("Откройте форму через Telegram — отправка доступна только там.");
           return;
         }
@@ -1202,14 +1234,29 @@
             tg.MainButton.showProgress(true);
           }
           hapticNotify("success");
-          tg.sendData(serialized);
-        } catch (_) {
-          state.sending = false;
-          if (tg.MainButton) {
-            tg.MainButton.showProgress(false);
+
+          // Mini App из reply-клавиатуры умеет sendData. Rich/inline-запуск
+          // такого метода не имеет, поэтому передаём данные через чат с ботом.
+          if (!isInlineLaunch() && typeof tg.sendData === "function") {
+            try {
+              tg.sendData(serialized);
+              return;
+            } catch (_) {
+              // Ниже сработает универсальный путь через openTelegramLink.
+            }
           }
-          updateMainButton();
-          showNotice("Не удалось отправить заказ. Попробуйте ещё раз.");
+
+          openOrderInChat(serialized);
+          els.notice.textContent = "Открыл чат с ботом. Нажмите «Отправить».";
+          els.notice.hidden = false;
+          window.setTimeout(resetSending, 1500);
+        } catch (error) {
+          resetSending();
+          showNotice(
+            error && error.message
+              ? error.message
+              : "Не удалось отправить заказ. Попробуйте ещё раз."
+          );
         }
       }
 
@@ -1232,7 +1279,9 @@
         }
 
         applyTheme();
-        els.telegramHint.textContent = "Данные отправятся в этот чат с ботом.";
+        els.telegramHint.textContent = isInlineLaunch()
+          ? "После отправки откроется чат с ботом — нажмите «Отправить»."
+          : "Данные отправятся в этот чат с ботом.";
 
         if (tg.BackButton) {
           tg.BackButton.onClick(goBack);
